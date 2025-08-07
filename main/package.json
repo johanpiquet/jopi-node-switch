@@ -1,0 +1,28 @@
+{
+  "version": "0.0.1",
+  "private": false,
+  "name": "jopi-node-switch",
+  "license": "MIT",
+  "homepage": "https://github.com/johanpiquet/jopi-node-switch",
+  "keywords": [],
+  "author": "Johan PIQUET",
+  "description": "Switch from javascript to typescript for node packages.",
+  "type": "module",
+
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node": "latest",
+    "@types/mime-types": "latest"
+  },
+
+  "scripts": {
+    "tsc": "tsc",
+    "bun-install": "bun install",
+    "npm-publish": "npm publish",
+
+    "start": "node dist/index.js"
+  }
+}
