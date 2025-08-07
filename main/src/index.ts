@@ -53,7 +53,7 @@ async function transformTo(serverType: ServerType, dirPath: string = process.cwd
                 break;
         }
 
-        await writeFile(packagePath, JSON.stringify(json, null, 2) + "\n")
+        await writeFile(packagePath, JSON.stringify(json, null, 2) + "\n");
     }
 
     return packages;
