@@ -1,7 +1,10 @@
-import { readdir, stat } from 'fs/promises';
-import { readFile } from 'fs/promises';
+import { readdir, readFile, stat } from 'fs/promises';
+import { parseTree, modify, applyEdits, format } from 'jsonc-parser';
+
 import path from 'path';
 import {writeFile} from "node:fs/promises";
+
+type ServerType = "node" | "bun";
 
 async function findPackagesWithNodeSwitch(dirPath: string): Promise<string[]> {
     let foundPackages: string[] = [];
@@ -29,13 +32,15 @@ async function findPackagesWithNodeSwitch(dirPath: string): Promise<string[]> {
     return foundPackages;
 }
 
-type ServerType = "node" | "bun";
-
-async function transformTo(serverType: ServerType, dirPath: string = process.cwd()) {
+async function transformTo(serverType: ServerType, dirPath: string, testOnly: boolean) {
     const packages = await findPackagesWithNodeSwitch(dirPath);
 
     for (const packagePath of packages) {
-        let json = JSON.parse(await readFile(packagePath, 'utf-8'));
+        //let json = JSON.parse(await readFile(packagePath, 'utf-8'));
+        let jsonText = await readFile(packagePath, "utf-8");
+
+        let json = JSON.parse(jsonText);
+        let originalJson = JSON.parse(jsonText);
 
         let nodeSwitch = json.nodeSwitch;
         if (nodeSwitch===true) nodeSwitch = {};
@@ -49,15 +54,31 @@ async function transformTo(serverType: ServerType, dirPath: string = process.cwd
                 break;
             case "bun":
                 json.main = nodeSwitch.bun + "/index.ts";
-                delete(json.types);
+                // Avoid deleting it to preserve order.
+                json.types = "";
                 break;
         }
 
-        await writeFile(packagePath, JSON.stringify(json, null, 2) + "\n");
+        let mustUpdate = false;
+        if (json.main!==originalJson.main) mustUpdate = true;
+        else if (json.type!==originalJson.type) mustUpdate = true;
+
+        if (!mustUpdate) continue;
+        let output: string;
+
+        // Will allow preserving initial formatting and only change minimum things.
+        //
+        let changes = modify(jsonText, ['main'], json.main, {});
+        changes = changes.concat(modify(jsonText, ['types'], json.types, {}));
+        output = applyEdits(jsonText, changes);
+
+        if (!testOnly) {
+            await writeFile(packagePath, output);
+        }
     }
 
     return packages;
 }
 
-//console.log(await transformTo("bun", "../.."));
-console.log(await transformTo("node", "../.."));
+//await transformTo("node", "../..", false);
+await transformTo("bun", "../..", false);
