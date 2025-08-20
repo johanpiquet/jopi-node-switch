@@ -1,5 +1,5 @@
 {
-  "version": "0.0.1",
+  "version": "1.0.0",
   "private": false,
   "name": "jopi-node-switch",
   "license": "MIT",
@@ -10,21 +10,33 @@
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+
+  "bin": {
+    "jopi-switch": "./bin/jopiswitch.js"
+  },
+
   "devDependencies": {
     "@types/bun": "latest",
     "@types/node": "latest",
     "@types/mime-types": "latest"
   },
+
   "scripts": {
     "tsc": "tsc",
-    "bun-install": "bun install",
-    "npm-publish": "npm publish",
-    "start": "node dist/index.js"
+    "npm-publish": "tsc & npm publish",
+
+    "tryscan": "node ./bin/jopiswitch.js scan",
+    "try-node": "node ./bin/jopiswitch.js --verbose node",
+    "try-bun": "node ./bin/jopiswitch.js bun --verbose",
+    "try-restore": "node ./bin/jopiswitch.js restore --verbose",
+
+    "remove-global": "npm remove jopi-node-switch --global",
+    "update-global": "npm install jopi-node-switch@latest --global"
   },
+
   "dependencies": {
     "jsonc-parser": "^3.3.1"
   },
 
-  "nodeSwitch": true,
-  "nodeSwitch-default": "node"
+  "nodeSwitch": false
 }

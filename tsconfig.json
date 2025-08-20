@@ -3,8 +3,8 @@
     "sourceMap": true,
     "declaration": true,
 
-    "outDir": "./dist",
-    "rootDir": "./src",
+    "outDir": "./bin",
+    "rootDir": "./bin",
 
     // Permet d'avoir des fonctions comme fetch.
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
@@ -23,11 +23,10 @@
   },
 
   "include": [
-    "./src/*.ts"
+    "./bin/*.ts"
   ],
 
   "exclude": [
-    "node_modules",
-    "**/*.spec.ts"
+    "node_modules"
   ]
 }

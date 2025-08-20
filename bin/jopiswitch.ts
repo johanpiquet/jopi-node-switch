@@ -1,10 +1,13 @@
 import { readdir, readFile, stat } from 'fs/promises';
-import { parseTree, modify, applyEdits, format } from 'jsonc-parser';
+import { modify, applyEdits } from 'jsonc-parser';
 
 import path from 'path';
 import {writeFile} from "node:fs/promises";
 
-type ServerType = "node" | "bun";
+type ServerType = "node" | "bun" | "restore";
+
+//const cwd = process.cwd();
+const cwd = path.resolve(process.cwd(), "..", "..");
 
 async function findPackagesWithNodeSwitch(dirPath: string): Promise<string[]> {
     let foundPackages: string[] = [];
@@ -23,8 +26,8 @@ async function findPackagesWithNodeSwitch(dirPath: string): Promise<string[]> {
                 const content = await readFile(filePath, 'utf-8');
                 const packageJson = JSON.parse(content);
                 if (packageJson.nodeSwitch) foundPackages.push(filePath);
-            } catch (error) {
-                console.error(`Error processing file: ${filePath}`, error);
+            } catch {
+                console.error(`This 'package.json' file is invalid: ${filePath}`);
             }
         }
     }
@@ -32,13 +35,11 @@ async function findPackagesWithNodeSwitch(dirPath: string): Promise<string[]> {
     return foundPackages;
 }
 
-async function transformTo(serverType: ServerType, dirPath: string, testOnly: boolean) {
+async function transformTo(serverType: ServerType, dirPath: string, verbose: boolean): Promise<void> {
     const packages = await findPackagesWithNodeSwitch(dirPath);
 
     for (const packagePath of packages) {
-        //let json = JSON.parse(await readFile(packagePath, 'utf-8'));
         let jsonText = await readFile(packagePath, "utf-8");
-
         let json = JSON.parse(jsonText);
         let originalJson = JSON.parse(jsonText);
 
@@ -46,6 +47,13 @@ async function transformTo(serverType: ServerType, dirPath: string, testOnly: bo
         if (nodeSwitch===true) nodeSwitch = {};
         if (!nodeSwitch.node) nodeSwitch.node = "dist";
         if (!nodeSwitch.bun) nodeSwitch.bun = "src";
+
+        if (serverType==="restore") {
+            if (json["nodeSwitch-default"]) serverType = json["nodeSwitch-default"];
+            if (!serverType) serverType = "node";
+        }
+
+        let mustIgnore = false;
 
         switch (serverType) {
             case "node":
@@ -57,7 +65,12 @@ async function transformTo(serverType: ServerType, dirPath: string, testOnly: bo
                 // Avoid deleting it to preserve order.
                 json.types = "";
                 break;
+            default:
+                mustIgnore = true;
+                break;
         }
+
+        if (mustIgnore) continue;
 
         let mustUpdate = false;
         if (json.main!==originalJson.main) mustUpdate = true;
@@ -72,13 +85,45 @@ async function transformTo(serverType: ServerType, dirPath: string, testOnly: bo
         changes = changes.concat(modify(jsonText, ['types'], json.types, {}));
         output = applyEdits(jsonText, changes);
 
-        if (!testOnly) {
-            await writeFile(packagePath, output);
-        }
+        if (verbose) console.log("[" + serverType + "] - Updating", packagePath);
+        await writeFile(packagePath, output);
     }
-
-    return packages;
 }
 
-//await transformTo("node", "../..", false);
-await transformTo("bun", "../..", false);
+const verboseFlag = "--verbose";
+
+async function main() {
+    let argv = process.argv.slice(1);
+
+    let verbose = false;
+    //
+    let idxVerbose = argv.indexOf(verboseFlag);
+    if (idxVerbose !== -1) {
+        verbose = true;
+        argv.splice(idxVerbose, 1);
+    }
+
+    let command = argv[1];
+
+    const validCommands = ['bun', 'node', 'restore', 'scan'];
+
+    if (!command || !validCommands.includes(command)) {
+        console.error('Please specify a valid command: bun, node, restore, or scan');
+        process.exit(1);
+    }
+
+    if (command === 'scan') {
+        const packages = await findPackagesWithNodeSwitch(cwd);
+        console.log('Found packages with nodeSwitch (scanned from ' + cwd + ")");
+        packages.forEach(p => console.log("-", p));
+        return;
+    }
+
+    await transformTo(command as ServerType, cwd, verbose);
+}
+
+main().catch(error => {
+    console.error('Error:', error);
+    process.exit(1);
+});
+
