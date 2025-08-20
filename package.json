@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.0.3",
   "private": false,
   "name": "jopi-node-switch",
   "license": "MIT",
@@ -8,24 +8,22 @@
   "author": "Johan PIQUET",
   "description": "Switch from javascript to typescript for node packages.",
   "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
 
   "bin": {
-    "jopi-switch": "./bin/jopiswitch.js"
+    "jopiswitch": "bin/jopiswitch.js"
   },
 
   "devDependencies": {
     "@types/bun": "latest",
-    "@types/node": "latest",
-    "@types/mime-types": "latest"
+    "@types/node": "latest"
   },
 
   "scripts": {
     "tsc": "tsc",
-    "npm-publish": "tsc & npm publish",
+    "npm-publish": "npm publish",
+    "npm-unpublish": "npm unpublish jopi-node-switch@1.0.0",
 
-    "tryscan": "node ./bin/jopiswitch.js scan",
+    "try-scan": "node ./bin/jopiswitch.js scan",
     "try-node": "node ./bin/jopiswitch.js --verbose node",
     "try-bun": "node ./bin/jopiswitch.js bun --verbose",
     "try-restore": "node ./bin/jopiswitch.js restore --verbose",
